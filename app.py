@@ -244,4 +244,324 @@ Task:
 
             st.error(f"Error: {e}")
 
-### 3
+# ===================================================
+# MODE 3 - DOCUMENT ASSISTANT
+# ===================================================
+
+if assistant_mode == "Document Assistant":
+
+    st.subheader("📄 Upload a Document")
+
+    uploaded_file = st.file_uploader(
+        "Choose a PDF",
+        type=["pdf"]
+    )
+
+    summary_style = st.selectbox(
+        "Summary Style",
+        [
+            "Student Friendly",
+            "Executive Summary",
+            "Research Summary",
+            "Bullet Points",
+            "Study Guide",
+            "Flashcards",
+            "Exam Prep",
+            "Quiz Generator"
+        ]
+    )
+
+    if uploaded_file:
+
+        try:
+
+            pdf_reader = PdfReader(uploaded_file)
+
+            document_text = ""
+
+            for page in pdf_reader.pages:
+
+                page_text = page.extract_text()
+
+                if page_text:
+                    document_text += page_text + "\n"
+
+            st.success(
+                f"Document loaded ({len(document_text):,} characters)"
+            )
+
+            if st.button("Generate Summary"):
+
+                prompt = f"""
+Analyze the document.
+
+Style:
+{summary_style}
+
+Document:
+{document_text[:12000]}
+
+Return ONLY valid JSON.
+
+{{
+  "title":"",
+  "summary":"",
+  "key_points":[],
+  "important_dates":[],
+  "study_questions":[],
+  "flashcards":[
+      {{
+          "question":"",
+          "answer":""
+      }}
+  ],
+  "exam_prep": {{
+      "important_concepts":[],
+      "likely_exam_topics":[],
+      "practice_questions":[]
+  }},
+  "quiz":[
+      {{
+          "question":"",
+          "options":[],
+          "answer":""
+      }}
+  ]
+}}
+"""
+
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    response_format={
+                        "type": "json_object"
+                    },
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ]
+                )
+
+                result = json.loads(
+                    response.choices[0].message.content
+                )
+
+                # TITLE
+
+                st.subheader("📘 Document Title")
+
+                st.info(
+                    result.get("title", "")
+                )
+
+                # SUMMARY
+
+                st.subheader("📝 Summary")
+
+                st.write(
+                    result.get("summary", "")
+                )
+
+                # KEY POINTS
+
+                st.subheader("🔑 Key Points")
+
+                for item in result.get(
+                    "key_points",
+                    []
+                ):
+                    st.write(f"• {item}")
+
+                # IMPORTANT DATES
+
+                st.subheader("📅 Important Dates")
+
+                dates = result.get(
+                    "important_dates",
+                    []
+                )
+
+                if dates:
+                    for d in dates:
+                        st.write(f"📅 {d}")
+                else:
+                    st.write(
+                        "No dates detected."
+                    )
+
+                # STUDY QUESTIONS
+
+                st.subheader(
+                    "❓ Study Questions"
+                )
+
+                for q in result.get(
+                    "study_questions",
+                    []
+                ):
+                    st.write(f"❓ {q}")
+
+                # FLASHCARDS
+
+                st.subheader(
+                    "🗂 Flashcards"
+                )
+
+                flashcards = result.get(
+                    "flashcards",
+                    []
+                )
+
+                for card in flashcards:
+
+                    with st.expander(
+                        card.get(
+                            "question",
+                            "Flashcard"
+                        )
+                    ):
+
+                        st.write(
+                            card.get(
+                                "answer",
+                                ""
+                            )
+                        )
+
+                # EXAM PREP
+
+                st.subheader(
+                    "🎓 Exam Preparation"
+                )
+
+                exam_prep = result.get(
+                    "exam_prep",
+                    {}
+                )
+
+                st.write(
+                    "### Important Concepts"
+                )
+
+                for concept in exam_prep.get(
+                    "important_concepts",
+                    []
+                ):
+                    st.write(
+                        f"✅ {concept}"
+                    )
+
+                st.write(
+                    "### Likely Exam Topics"
+                )
+
+                for topic in exam_prep.get(
+                    "likely_exam_topics",
+                    []
+                ):
+                    st.write(
+                        f"📚 {topic}"
+                    )
+
+                st.write(
+                    "### Practice Questions"
+                )
+
+                for pq in exam_prep.get(
+                    "practice_questions",
+                    []
+                ):
+                    st.write(
+                        f"❓ {pq}"
+                    )
+
+                # QUIZ GENERATOR
+
+                st.subheader(
+                    "📝 Practice Quiz"
+                )
+
+                quiz = result.get(
+                    "quiz",
+                    []
+                )
+
+                for idx, item in enumerate(
+                    quiz,
+                    start=1
+                ):
+
+                    st.markdown(
+                        f"### Question {idx}"
+                    )
+
+                    st.write(
+                        item.get(
+                            "question",
+                            ""
+                        )
+                    )
+
+                    for option in item.get(
+                        "options",
+                        []
+                    ):
+                        st.write(
+                            f"• {option}"
+                        )
+
+                    with st.expander(
+                        "Show Answer"
+                    ):
+                        st.success(
+                            item.get(
+                                "answer",
+                                ""
+                            )
+                        )
+
+            # DOCUMENT Q&A
+
+            st.divider()
+
+            st.subheader(
+                "💬 Ask About This Document"
+            )
+
+            question = st.text_input(
+                "Ask a question about this document"
+            )
+
+            if question:
+
+                qa_prompt = f"""
+Answer using ONLY information
+from the document.
+
+Document:
+{document_text[:12000]}
+
+Question:
+{question}
+"""
+
+                qa_response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": qa_prompt
+                        }
+                    ]
+                )
+
+                st.subheader("🤖 Answer")
+
+                st.success(
+                    qa_response.choices[0].message.content
+                )
+
+        except Exception as e:
+
+            st.error(f"Error: {e}")
