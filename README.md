@@ -12,7 +12,4 @@
 
 
 
-### Requirements:
-- streamlit
-- groq
-- pypdf
+
