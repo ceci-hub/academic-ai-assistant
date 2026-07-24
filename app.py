@@ -121,16 +121,20 @@ Text:
 
             try:
 
-                response = ollama.chat(
-                    model="llama3.2",
-                    format="json",
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    response_format={"type": "json_object"},
                     messages=[
                         {
-                            "role": "user",
+                           "role": "user",
                             "content": prompt
                         }
-                    ]
-                )
+                      ]
+                    )
+
+result = json.loads(
+    response.choices[0].message.content
+)
 
                 result = json.loads(
                     response["message"]["content"]
@@ -313,16 +317,16 @@ Return valid JSON only.
 
         try:
 
-            response = ollama.chat(
-                model="llama3.2",
-                format="json",
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ]
-            )
+            response = client.chat.completions.create(
+              model="llama-3.3-70b-versatile",
+              response_format={"type": "json_object"},
+              messages=[
+                 {
+                    "role": "user",
+                    "content": prompt
+                 }
+               ]
+             )
 
             result = json.loads(
                 response["message"]["content"]
@@ -459,17 +463,17 @@ Return ONLY valid JSON.
 }}
 """
 
-                response = ollama.chat(
-                    model="llama3.2",
-                    format="json",
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    response_format={"type": "json_object"},
                     messages=[
                         {
-                            "role": "user",
+                           "role": "user",
                             "content": prompt
                         }
-                    ]
-                )
-
+                      ]
+                    )
+                
                 result = json.loads(
                     response["message"]["content"]
                 )
@@ -738,15 +742,16 @@ Question:
 {question}
 """
 
-                qa_response = ollama.chat(
-                    model="llama3.2",
+                qa_response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    response_format={"type": "json_object"},
                     messages=[
                         {
-                            "role": "user",
-                            "content": qa_prompt
+                           "role": "user",
+                            "content": prompt
                         }
-                    ]
-                )
+                      ]
+                    )
 
                 st.subheader("🤖 Answer")
 
