@@ -9,3 +9,10 @@
  - Flashcards 
  - Quiz generation 
  - Document Q&amp;A
+
+
+
+### Requirements:
+- streamlit
+- groq
+- pypdf
