@@ -1,10 +1,12 @@
 # pip install streamlit ollama
 
 import streamlit as st
-import ollama
+from groq import Groq
 import json
 import tempfile
 from PyPDF2 import PdfReader
+
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 st.set_page_config(
     page_title="AI Writing Assistant",
