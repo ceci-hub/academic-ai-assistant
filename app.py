@@ -5,9 +5,7 @@ from groq import Groq
 import json
 from pypdf import PdfReader
 
-client = Groq(
-    api_key="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"
-)
+client = Groq(    api_key=st.secrets["GROQ_API_KEY"])
 
 st.set_page_config(
     page_title="AI Academic Assistant",
