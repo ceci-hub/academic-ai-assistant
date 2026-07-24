@@ -5,9 +5,9 @@ import streamlit as st
 from groq import Groq
 import json
 import tempfile
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+client = Groq(api_key="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")
 
 st.set_page_config(
     page_title="AI Writing Assistant",
@@ -329,7 +329,7 @@ Return valid JSON only.
              )
 
             result = json.loads(
-                response["message"]["content"]
+                response.choices[0].message.content
             )
 
             if result.get("subject_line"):
@@ -475,7 +475,7 @@ Return ONLY valid JSON.
                     )
                 
                 result = json.loads(
-                    response["message"]["content"]
+                    response.choices[0].message.content
                 )
 
                 # =========================
@@ -743,20 +743,19 @@ Question:
 """
 
                 qa_response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    response_format={"type": "json_object"},
-                    messages=[
-                        {
-                           "role": "user",
-                            "content": prompt
-                        }
-                      ]
-                    )
+                     model="llama-3.3-70b-versatile",
+                     messages=[
+                           {
+                             "role": "user",
+                             "content": qa_prompt
+                           }
+                        ]
+                      )
 
                 st.subheader("🤖 Answer")
 
                 st.success(
-                    qa_response["message"]["content"]
+                    qa_response.choices[0].message.content
                 )
 
         except Exception as e:
