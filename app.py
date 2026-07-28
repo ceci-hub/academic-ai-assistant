@@ -250,6 +250,7 @@ Text:
 ### MÓDULO 2 (HELP ME WRITE)
 #################################################
 
+
 if assistant_mode == "Help Me Write":
 
     situation = st.text_input(
@@ -291,29 +292,37 @@ if assistant_mode == "Help Me Write":
         ]
     )
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-        generate = st.button(
-            "📝 Generate Draft"
-        )
-
-    with col2:
-        improve = st.button(
-            "✨ Improve Last Draft"
-        )
-
-    if generate:
+    if st.button("📝 Generate Draft"):
 
         prompt = f"""
+Create a high-quality draft.
+
 Return ONLY JSON.
 
 {{
   "draft":"",
   "subject_line":"",
   "strengths":[],
-  "suggestions":[]
+  "suggestions":[
+      ""
+  ]
 }}
+
+Requirements:
+
+1. Write the best possible draft.
+2. Identify 2-4 writing strengths.
+3. Provide 3-5 specific improvement suggestions.
+4. Suggestions must be actionable and concrete.
+5. Examples of suggestions:
+   - Strengthen the opening paragraph.
+   - Make the tone more professional.
+   - Add supporting details.
+   - Be more concise.
+   - Make the request clearer.
+   - Improve the conclusion.
+   - Increase persuasiveness.
+6. Do NOT use generic suggestions.
 
 Situation:
 {situation}
@@ -356,13 +365,7 @@ Task:
                 ""
             )
 
-            st.session_state["last_draft"] = (
-                draft_text
-            )
-
-            st.session_state["draft_history"].append(
-                draft_text
-            )
+            st.session_state["last_draft"] = draft_text
 
             if result.get(
                 "subject_line"
@@ -407,16 +410,6 @@ Task:
             )
 
             st.subheader(
-                "Suggestions"
-            )
-
-            for s in result.get(
-                "suggestions",
-                []
-            ):
-                st.write(f"• {s}")
-
-            st.subheader(
                 "✅ Strengths"
             )
 
@@ -428,127 +421,94 @@ Task:
                     strength
                 )
 
-        except Exception as e:
-
-            st.error(
-                f"Error: {e}"
+            suggestions = result.get(
+                "suggestions",
+                []
             )
 
-    if improve and st.session_state.get(
-        "last_draft"
-    ):
+            if suggestions:
 
-        try:
+                st.subheader(
+                    "💡 Improvement Suggestions"
+                )
 
-            with st.spinner(
-                "Improving draft..."
-            ):
+                selected_suggestion = st.selectbox(
+                    "Choose a suggestion",
+                    suggestions
+                )
 
-                improve_prompt = f"""
-Improve the following text.
+                if st.button(
+                    "✨ Apply Suggestion"
+                ):
+
+                    improve_prompt = f"""
+Improve the following draft.
+
+Apply ONLY this improvement:
+
+{selected_suggestion}
 
 Return ONLY JSON.
 
 {{
-  "improved_text":"",
-  "changes":[]
+    "improved_text":""
 }}
 
-Text:
-{st.session_state["last_draft"]}
+Draft:
+{draft_text}
 """
 
-                response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    response_format={
-                        "type": "json_object"
-                    },
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": improve_prompt
-                        }
-                    ]
-                )
+                    with st.spinner(
+                        "Applying suggestion..."
+                    ):
 
-            improve_result = json.loads(
-                response.choices[0].message.content
-            )
+                        improve_response = client.chat.completions.create(
+                            model="llama-3.3-70b-versatile",
+                            response_format={
+                                "type": "json_object"
+                            },
+                            messages=[
+                                {
+                                    "role": "user",
+                                    "content": improve_prompt
+                                }
+                            ]
+                        )
 
-            improved_text = improve_result.get(
-                "improved_text",
-                ""
-            )
+                    improve_result = json.loads(
+                        improve_response.choices[0].message.content
+                    )
 
-            st.session_state["last_draft"] = (
-                improved_text
-            )
+                    improved_text = improve_result.get(
+                        "improved_text",
+                        ""
+                    )
 
-            st.session_state["draft_history"].append(
-                improved_text
-            )
+                    st.session_state["last_draft"] = (
+                        improved_text
+                    )
 
-            st.subheader(
-                "✨ Improved Version"
-            )
+                    st.subheader(
+                        "✨ Improved Draft"
+                    )
 
-            st.text_area(
-                "Improved Draft",
-                improved_text,
-                height=300
-            )
-
-            st.subheader(
-                "Changes Made"
-            )
-
-            for change in improve_result.get(
-                "changes",
-                []
-            ):
-                st.write(
-                    f"• {change}"
-                )
+                    st.text_area(
+                        "Updated Draft",
+                        value=improved_text,
+                        height=300
+                    )
 
         except Exception as e:
 
             st.error(
                 f"Error: {e}"
             )
-
-    if st.session_state[
-        "draft_history"
-    ]:
-
-        with st.expander(
-            "📜 Draft History"
-        ):
-
-            for i, draft in enumerate(
-                st.session_state[
-                    "draft_history"
-                ],
-                start=1
-            ):
-
-                st.write(
-                    f"Version {i}"
-                )
-
-                st.text_area(
-                    f"Draft {i}",
-                    draft,
-                    height=150
-                )
 
 
 #################################################
 ### Document Assistant
 #################################################
 
-# ===================================================
-# MODE 3 - DOCUMENT ASSISTANT
-# ===================================================
 
 if assistant_mode == "Document Assistant":
 
@@ -599,14 +559,12 @@ if assistant_mode == "Document Assistant":
             col1, col2 = st.columns(2)
 
             with col1:
-
                 st.metric(
                     "Characters",
                     len(document_text)
                 )
 
             with col2:
-
                 st.metric(
                     "Pages",
                     len(pdf_reader.pages)
@@ -675,210 +633,223 @@ Return ONLY valid JSON.
                     response.choices[0].message.content
                 )
 
-                # TITLE
+                # =====================================
+                # TABS
+                # =====================================
 
-                st.subheader(
-                    "📘 Document Title"
-                )
-
-                st.info(
-                    result.get(
-                        "title",
-                        ""
-                    )
+                tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+                    [
+                        "📝 Summary",
+                        "🔑 Key Points",
+                        "❓ Study Questions",
+                        "🗂 Flashcards",
+                        "🎓 Exam Prep",
+                        "📝 Quiz"
+                    ]
                 )
 
                 # SUMMARY
 
-                st.subheader(
-                    "📝 Summary"
-                )
+                with tab1:
 
-                st.info(
-                    result.get(
-                        "summary",
-                        ""
-                    )
-                )
-
-                # KEY POINTS
-
-                st.subheader(
-                    "🔑 Key Points"
-                )
-
-                for item in result.get(
-                    "key_points",
-                    []
-                ):
-                    st.write(
-                        f"• {item}"
+                    st.subheader(
+                        "📘 Document Title"
                     )
 
-                # IMPORTANT DATES
-
-                st.subheader(
-                    "📅 Important Dates"
-                )
-
-                dates = result.get(
-                    "important_dates",
-                    []
-                )
-
-                if dates:
-
-                    for d in dates:
-
-                        st.write(
-                            f"📅 {d}"
-                        )
-
-                else:
-
-                    st.write(
-                        "No dates detected."
-                    )
-
-                # STUDY QUESTIONS
-
-                st.subheader(
-                    "❓ Study Questions"
-                )
-
-                for q in result.get(
-                    "study_questions",
-                    []
-                ):
-                    st.write(
-                        f"❓ {q}"
-                    )
-
-                # FLASHCARDS
-
-                st.subheader(
-                    "🗂 Flashcards"
-                )
-
-                flashcards = result.get(
-                    "flashcards",
-                    []
-                )
-
-                for card in flashcards:
-
-                    with st.expander(
-                        card.get(
-                            "question",
-                            "Flashcard"
-                        )
-                    ):
-
-                        st.write(
-                            card.get(
-                                "answer",
-                                ""
-                            )
-                        )
-
-                # EXAM PREP
-
-                st.subheader(
-                    "🎓 Exam Preparation"
-                )
-
-                exam_prep = result.get(
-                    "exam_prep",
-                    {}
-                )
-
-                st.write(
-                    "### Important Concepts"
-                )
-
-                for concept in exam_prep.get(
-                    "important_concepts",
-                    []
-                ):
-
-                    st.write(
-                        f"✅ {concept}"
-                    )
-
-                st.write(
-                    "### Likely Exam Topics"
-                )
-
-                for topic in exam_prep.get(
-                    "likely_exam_topics",
-                    []
-                ):
-
-                    st.write(
-                        f"📚 {topic}"
-                    )
-
-                st.write(
-                    "### Practice Questions"
-                )
-
-                for pq in exam_prep.get(
-                    "practice_questions",
-                    []
-                ):
-
-                    st.write(
-                        f"❓ {pq}"
-                    )
-
-                # QUIZ
-
-                st.subheader(
-                    "📝 Practice Quiz"
-                )
-
-                quiz = result.get(
-                    "quiz",
-                    []
-                )
-
-                for idx, item in enumerate(
-                    quiz,
-                    start=1
-                ):
-
-                    st.markdown(
-                        f"### Question {idx}"
-                    )
-
-                    st.write(
-                        item.get(
-                            "question",
+                    st.info(
+                        result.get(
+                            "title",
                             ""
                         )
                     )
 
-                    for option in item.get(
-                        "options",
+                    st.subheader(
+                        "📝 Summary"
+                    )
+
+                    st.info(
+                        result.get(
+                            "summary",
+                            ""
+                        )
+                    )
+
+                    dates = result.get(
+                        "important_dates",
+                        []
+                    )
+
+                    if dates:
+
+                        st.subheader(
+                            "📅 Important Dates"
+                        )
+
+                        for d in dates:
+
+                            st.write(
+                                f"📅 {d}"
+                            )
+
+                # KEY POINTS
+
+                with tab2:
+
+                    st.subheader(
+                        "🔑 Key Points"
+                    )
+
+                    for item in result.get(
+                        "key_points",
                         []
                     ):
 
                         st.write(
-                            f"• {option}"
+                            f"• {item}"
                         )
 
-                    with st.expander(
-                        "Show Answer"
+                # STUDY QUESTIONS
+
+                with tab3:
+
+                    st.subheader(
+                        "❓ Study Questions"
+                    )
+
+                    for q in result.get(
+                        "study_questions",
+                        []
                     ):
 
-                        st.success(
+                        st.write(
+                            f"❓ {q}"
+                        )
+
+                # FLASHCARDS
+
+                with tab4:
+
+                    st.subheader(
+                        "🗂 Flashcards"
+                    )
+
+                    flashcards = result.get(
+                        "flashcards",
+                        []
+                    )
+
+                    for card in flashcards:
+
+                        with st.expander(
+                            card.get(
+                                "question",
+                                "Flashcard"
+                            )
+                        ):
+
+                            st.write(
+                                card.get(
+                                    "answer",
+                                    ""
+                                )
+                            )
+
+                # EXAM PREP
+
+                with tab5:
+
+                    exam_prep = result.get(
+                        "exam_prep",
+                        {}
+                    )
+
+                    st.subheader(
+                        "✅ Important Concepts"
+                    )
+
+                    for concept in exam_prep.get(
+                        "important_concepts",
+                        []
+                    ):
+
+                        st.write(
+                            f"✅ {concept}"
+                        )
+
+                    st.subheader(
+                        "📚 Likely Exam Topics"
+                    )
+
+                    for topic in exam_prep.get(
+                        "likely_exam_topics",
+                        []
+                    ):
+
+                        st.write(
+                            f"📚 {topic}"
+                        )
+
+                    st.subheader(
+                        "❓ Practice Questions"
+                    )
+
+                    for pq in exam_prep.get(
+                        "practice_questions",
+                        []
+                    ):
+
+                        st.write(
+                            f"❓ {pq}"
+                        )
+
+                # QUIZ
+
+                with tab6:
+
+                    quiz = result.get(
+                        "quiz",
+                        []
+                    )
+
+                    for idx, item in enumerate(
+                        quiz,
+                        start=1
+                    ):
+
+                        st.markdown(
+                            f"### Question {idx}"
+                        )
+
+                        st.write(
                             item.get(
-                                "answer",
+                                "question",
                                 ""
                             )
                         )
 
+                        for option in item.get(
+                            "options",
+                            []
+                        ):
+
+                            st.write(
+                                f"• {option}"
+                            )
+
+                        with st.expander(
+                            "Show Answer"
+                        ):
+
+                            st.success(
+                                item.get(
+                                    "answer",
+                                    ""
+                                )
+                            )
+
+            # =====================================
             # DOCUMENT Q&A
+            # =====================================
 
             st.divider()
 
@@ -929,3 +900,4 @@ Question:
             st.error(
                 f"Error: {e}"
             )
+
