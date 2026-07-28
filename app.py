@@ -1,11 +1,14 @@
-# pip install streamlit ollama
-
 import streamlit as st
 from groq import Groq
 import json
 from pypdf import PdfReader
 
-client = Groq(    api_key=st.secrets["GROQ_API_KEY"])
+client = Groq(
+    api_key=st.secrets["GROQ_API_KEY"]
+)
+
+if "draft_history" not in st.session_state:
+    st.session_state["draft_history"] = []
 
 st.set_page_config(
     page_title="AI Academic Assistant",
@@ -13,22 +16,67 @@ st.set_page_config(
     layout="wide"
 )
 
+st.markdown(
+    """
+    <style>
+
+    .stButton button {
+        width: 100%;
+        border-radius: 10px;
+        height: 45px;
+        font-weight: bold;
+    }
+
+    .stTextArea textarea {
+        border-radius: 10px;
+    }
+
+    .block-container {
+        padding-top: 2rem;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 st.title("✍️ AI Academic Assistant")
 
-st.caption(
-    "Built by Cecilia Regueira using Streamlit and Groq"
+st.info(
+    "Create, improve, summarize, and study smarter with AI."
 )
 
-assistant_mode = st.radio(
-    "Choose Assistant Mode",
-    [
-        "Improve Existing Text",
-        "Help Me Write",
-        "Document Assistant"
-    ]
-)
+with st.sidebar:
 
-### Improve Existing Text
+    st.title("✍️ AI Academic Assistant")
+
+    st.caption(
+        "Built by Cecilia Regueira"
+    )
+
+    assistant_mode = st.radio(
+        "Choose Assistant Mode",
+        [
+            "Improve Existing Text",
+            "Help Me Write",
+            "Document Assistant"
+        ]
+    )
+
+    st.divider()
+
+    st.info(
+        "Powered by Groq + Llama 3.3"
+    )
+
+#################################################
+###  MÓDULO 1 (IMPROVE EXISTING TEXT)
+#################################################
+
+# ===================================================
+# MODE 1 - IMPROVE EXISTING TEXT
+# ===================================================
+
 if assistant_mode == "Improve Existing Text":
 
     text = st.text_area(
@@ -73,16 +121,22 @@ Text:
 
         try:
 
-            response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                response_format={"type": "json_object"},
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ]
-            )
+            with st.spinner(
+                "Analyzing writing..."
+            ):
+
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    response_format={
+                        "type": "json_object"
+                    },
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ]
+                )
 
             result = json.loads(
                 response.choices[0].message.content
@@ -91,18 +145,24 @@ Text:
             col1, col2, col3 = st.columns(3)
 
             with col1:
+
                 st.metric(
                     "Grammar Score",
-                    f"{result.get('grammar_score',0)}/100"
+                    f"{result.get('grammar_score', 0)}/100"
                 )
 
             with col2:
+
                 st.metric(
                     "Tone",
-                    result.get("tone","Unknown")
+                    result.get(
+                        "tone",
+                        "Unknown"
+                    )
                 )
 
             with col3:
+
                 st.metric(
                     "Reading Level",
                     result.get(
@@ -111,24 +171,84 @@ Text:
                     )
                 )
 
-            st.subheader("Corrected Text")
+            st.subheader(
+                "✅ Corrected Text"
+            )
 
-            st.success(
-                result.get(
+            st.text_area(
+                "Improved Version",
+                value=result.get(
                     "corrected_text",
+                    ""
+                ),
+                height=300
+            )
+
+            writing_coach = result.get(
+                "writing_coach",
+                {}
+            )
+
+            st.subheader(
+                "💪 Strengths"
+            )
+
+            for item in writing_coach.get(
+                "strengths",
+                []
+            ):
+
+                st.success(item)
+
+            st.subheader(
+                "📈 Areas for Improvement"
+            )
+
+            for item in writing_coach.get(
+                "areas_for_improvement",
+                []
+            ):
+
+                st.warning(item)
+
+            st.subheader(
+                "🎯 Writing Coach Advice"
+            )
+
+            st.info(
+                writing_coach.get(
+                    "overall_advice",
                     ""
                 )
             )
 
+            mistakes = result.get(
+                "common_mistakes",
+                []
+            )
+
+            if mistakes:
+
+                st.subheader(
+                    "⚠️ Common Mistakes Found"
+                )
+
+                for mistake in mistakes:
+
+                    st.write(
+                        f"• {mistake}"
+                    )
+
         except Exception as e:
 
-            st.error(f"Error: {e}")
+            st.error(
+                f"Error: {e}"
+            )
 
 
-# ===================================================
-# MODE 2 - ### help me write
-# ===================================================
-
+#################################################
+### MÓDULO 2 (HELP ME WRITE)
+#################################################
 
 if assistant_mode == "Help Me Write":
 
@@ -171,7 +291,19 @@ if assistant_mode == "Help Me Write":
         ]
     )
 
-    if st.button("Generate Draft"):
+    col1, col2 = st.columns(2)
+
+    with col1:
+        generate = st.button(
+            "📝 Generate Draft"
+        )
+
+    with col2:
+        improve = st.button(
+            "✨ Improve Last Draft"
+        )
+
+    if generate:
 
         prompt = f"""
 Return ONLY JSON.
@@ -198,27 +330,43 @@ Task:
 
         try:
 
-            response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                response_format={"type": "json_object"},
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ]
-            )
+            with st.spinner(
+                "Writing draft..."
+            ):
+
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    response_format={
+                        "type": "json_object"
+                    },
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ]
+                )
 
             result = json.loads(
                 response.choices[0].message.content
             )
 
-            st.session_state["last_draft"] = result.get(
+            draft_text = result.get(
                 "draft",
                 ""
             )
 
-            if result.get("subject_line"):
+            st.session_state["last_draft"] = (
+                draft_text
+            )
+
+            st.session_state["draft_history"].append(
+                draft_text
+            )
+
+            if result.get(
+                "subject_line"
+            ):
 
                 st.subheader(
                     "Suggested Subject"
@@ -228,19 +376,34 @@ Task:
                     result["subject_line"]
                 )
 
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.metric(
+                    "Words",
+                    len(draft_text.split())
+                )
+
+            with col2:
+                st.metric(
+                    "Characters",
+                    len(draft_text)
+                )
+
+            with col3:
+                st.metric(
+                    "Paragraphs",
+                    draft_text.count("\n\n") + 1
+                )
+
             st.subheader(
                 "Generated Draft"
-            )
-
-            draft_text = result.get(
-                "draft",
-                ""
             )
 
             st.text_area(
                 "Draft",
                 value=draft_text,
-                height=250
+                height=300
             )
 
             st.subheader(
@@ -253,19 +416,33 @@ Task:
             ):
                 st.write(f"• {s}")
 
+            st.subheader(
+                "✅ Strengths"
+            )
+
+            for strength in result.get(
+                "strengths",
+                []
+            ):
+                st.success(
+                    strength
+                )
+
         except Exception as e:
 
             st.error(
                 f"Error: {e}"
             )
 
-    # IMPROVE LAST DRAFT
+    if improve and st.session_state.get(
+        "last_draft"
+    ):
 
-    if st.session_state.get("last_draft"):
+        try:
 
-        if st.button("✨ Improve Last Draft"):
-
-            try:
+            with st.spinner(
+                "Improving draft..."
+            ):
 
                 improve_prompt = f"""
 Improve the following text.
@@ -281,7 +458,7 @@ Text:
 {st.session_state["last_draft"]}
 """
 
-                improve_response = client.chat.completions.create(
+                response = client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     response_format={
                         "type": "json_object"
@@ -294,44 +471,81 @@ Text:
                     ]
                 )
 
-                improve_result = json.loads(
-                    improve_response.choices[0].message.content
+            improve_result = json.loads(
+                response.choices[0].message.content
+            )
+
+            improved_text = improve_result.get(
+                "improved_text",
+                ""
+            )
+
+            st.session_state["last_draft"] = (
+                improved_text
+            )
+
+            st.session_state["draft_history"].append(
+                improved_text
+            )
+
+            st.subheader(
+                "✨ Improved Version"
+            )
+
+            st.text_area(
+                "Improved Draft",
+                improved_text,
+                height=300
+            )
+
+            st.subheader(
+                "Changes Made"
+            )
+
+            for change in improve_result.get(
+                "changes",
+                []
+            ):
+                st.write(
+                    f"• {change}"
                 )
 
-                improved_text = improve_result.get(
-                    "improved_text",
-                    ""
-                )
+        except Exception as e:
 
-                st.subheader(
-                    "✨ Improved Version"
+            st.error(
+                f"Error: {e}"
+            )
+
+    if st.session_state[
+        "draft_history"
+    ]:
+
+        with st.expander(
+            "📜 Draft History"
+        ):
+
+            for i, draft in enumerate(
+                st.session_state[
+                    "draft_history"
+                ],
+                start=1
+            ):
+
+                st.write(
+                    f"Version {i}"
                 )
 
                 st.text_area(
-                    "Improved Draft",
-                    value=improved_text,
-                    height=300
+                    f"Draft {i}",
+                    draft,
+                    height=150
                 )
 
-                st.subheader(
-                    "Changes Made"
-                )
 
-                for change in improve_result.get(
-                    "changes",
-                    []
-                ):
-                    st.write(
-                        f"• {change}"
-                    )
+#################################################
+### Document Assistant
+#################################################
 
-                st.session_state["last_draft"] = improved_text
-
-            except Exception as e:
-
-                st.error(
-                    f"Error: {e}"
-                )    
 # ===================================================
 # MODE 3 - DOCUMENT ASSISTANT
 # ===================================================
@@ -363,7 +577,9 @@ if assistant_mode == "Document Assistant":
 
         try:
 
-            pdf_reader = PdfReader(uploaded_file)
+            pdf_reader = PdfReader(
+                uploaded_file
+            )
 
             document_text = ""
 
@@ -372,13 +588,33 @@ if assistant_mode == "Document Assistant":
                 page_text = page.extract_text()
 
                 if page_text:
-                    document_text += page_text + "\n"
+                    document_text += (
+                        page_text + "\n"
+                    )
 
             st.success(
                 f"Document loaded ({len(document_text):,} characters)"
             )
 
-            if st.button("Generate Summary"):
+            col1, col2 = st.columns(2)
+
+            with col1:
+
+                st.metric(
+                    "Characters",
+                    len(document_text)
+                )
+
+            with col2:
+
+                st.metric(
+                    "Pages",
+                    len(pdf_reader.pages)
+                )
+
+            if st.button(
+                "Generate Summary"
+            ):
 
                 prompt = f"""
 Analyze the document.
@@ -418,18 +654,22 @@ Return ONLY valid JSON.
 }}
 """
 
-                response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    response_format={
-                        "type": "json_object"
-                    },
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ]
-                )
+                with st.spinner(
+                    "Analyzing document..."
+                ):
+
+                    response = client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        response_format={
+                            "type": "json_object"
+                        },
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": prompt
+                            }
+                        ]
+                    )
 
                 result = json.loads(
                     response.choices[0].message.content
@@ -437,33 +677,49 @@ Return ONLY valid JSON.
 
                 # TITLE
 
-                st.subheader("📘 Document Title")
+                st.subheader(
+                    "📘 Document Title"
+                )
 
                 st.info(
-                    result.get("title", "")
+                    result.get(
+                        "title",
+                        ""
+                    )
                 )
 
                 # SUMMARY
 
-                st.subheader("📝 Summary")
+                st.subheader(
+                    "📝 Summary"
+                )
 
-                st.write(
-                    result.get("summary", "")
+                st.info(
+                    result.get(
+                        "summary",
+                        ""
+                    )
                 )
 
                 # KEY POINTS
 
-                st.subheader("🔑 Key Points")
+                st.subheader(
+                    "🔑 Key Points"
+                )
 
                 for item in result.get(
                     "key_points",
                     []
                 ):
-                    st.write(f"• {item}")
+                    st.write(
+                        f"• {item}"
+                    )
 
                 # IMPORTANT DATES
 
-                st.subheader("📅 Important Dates")
+                st.subheader(
+                    "📅 Important Dates"
+                )
 
                 dates = result.get(
                     "important_dates",
@@ -471,9 +727,15 @@ Return ONLY valid JSON.
                 )
 
                 if dates:
+
                     for d in dates:
-                        st.write(f"📅 {d}")
+
+                        st.write(
+                            f"📅 {d}"
+                        )
+
                 else:
+
                     st.write(
                         "No dates detected."
                     )
@@ -488,7 +750,9 @@ Return ONLY valid JSON.
                     "study_questions",
                     []
                 ):
-                    st.write(f"❓ {q}")
+                    st.write(
+                        f"❓ {q}"
+                    )
 
                 # FLASHCARDS
 
@@ -536,6 +800,7 @@ Return ONLY valid JSON.
                     "important_concepts",
                     []
                 ):
+
                     st.write(
                         f"✅ {concept}"
                     )
@@ -548,6 +813,7 @@ Return ONLY valid JSON.
                     "likely_exam_topics",
                     []
                 ):
+
                     st.write(
                         f"📚 {topic}"
                     )
@@ -560,11 +826,12 @@ Return ONLY valid JSON.
                     "practice_questions",
                     []
                 ):
+
                     st.write(
                         f"❓ {pq}"
                     )
 
-                # QUIZ GENERATOR
+                # QUIZ
 
                 st.subheader(
                     "📝 Practice Quiz"
@@ -595,6 +862,7 @@ Return ONLY valid JSON.
                         "options",
                         []
                     ):
+
                         st.write(
                             f"• {option}"
                         )
@@ -602,6 +870,7 @@ Return ONLY valid JSON.
                     with st.expander(
                         "Show Answer"
                     ):
+
                         st.success(
                             item.get(
                                 "answer",
@@ -624,8 +893,7 @@ Return ONLY valid JSON.
             if question:
 
                 qa_prompt = f"""
-Answer using ONLY information
-from the document.
+Answer using ONLY information from the document.
 
 Document:
 {document_text[:12000]}
@@ -634,17 +902,23 @@ Question:
 {question}
 """
 
-                qa_response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": qa_prompt
-                        }
-                    ]
-                )
+                with st.spinner(
+                    "Searching document..."
+                ):
 
-                st.subheader("🤖 Answer")
+                    qa_response = client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": qa_prompt
+                            }
+                        ]
+                    )
+
+                st.subheader(
+                    "🤖 Answer"
+                )
 
                 st.success(
                     qa_response.choices[0].message.content
@@ -652,4 +926,6 @@ Question:
 
         except Exception as e:
 
-            st.error(f"Error: {e}")
+            st.error(
+                f"Error: {e}"
+            )
