@@ -28,6 +28,7 @@ assistant_mode = st.radio(
     ]
 )
 
+### Improve Existing Text
 if assistant_mode == "Improve Existing Text":
 
     text = st.text_area(
@@ -123,7 +124,12 @@ Text:
 
             st.error(f"Error: {e}")
 
-### help me write
+
+# ===================================================
+# MODE 2 - ### help me write
+# ===================================================
+
+
 if assistant_mode == "Help Me Write":
 
     situation = st.text_input(
@@ -194,11 +200,11 @@ Task:
 
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
-                response_format={"type":"json_object"},
+                response_format={"type": "json_object"},
                 messages=[
                     {
-                        "role":"user",
-                        "content":prompt
+                        "role": "user",
+                        "content": prompt
                     }
                 ]
             )
@@ -206,9 +212,12 @@ Task:
             result = json.loads(
                 response.choices[0].message.content
             )
-            
-            st.session_state["last_draft"] = result.get( "draft", "")
-            
+
+            st.session_state["last_draft"] = result.get(
+                "draft",
+                ""
+            )
+
             if result.get("subject_line"):
 
                 st.subheader(
@@ -223,15 +232,16 @@ Task:
                 "Generated Draft"
             )
 
-            draft_text = result.get("draft", "")
+            draft_text = result.get(
+                "draft",
+                ""
+            )
 
             st.text_area(
-               "Draft",
+                "Draft",
                 value=draft_text,
                 height=250
-                )
-
-             st.session_state["last_draft"] = draft_text
+            )
 
             st.subheader(
                 "Suggestions"
@@ -243,71 +253,85 @@ Task:
             ):
                 st.write(f"• {s}")
 
-            if "last_draft" in st.session_state:
-
-                 if st.button("✨ Improve Last Draft"):
-
-                 improve_prompt = f"""
-                     Improve the following text.
-
-                  Return ONLY JSON.
-
-                   {{
-                      "improved_text":"",
-                       "changes":[]
-                }}
-
-             Text:
-             {st.session_state["last_draft"]}
-               """
-
-        improve_response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            response_format={
-                "type": "json_object"
-            },
-            messages=[
-                {
-                    "role": "user",
-                    "content": improve_prompt
-                }
-            ]
-        )
-
-        improve_result = json.loads(
-            improve_response.choices[0].message.content
-        )
-
-        st.subheader("✨ Improved Version")
-
-        st.text_area(
-            "Improved Draft",
-            value=improve_result.get(
-                "improved_text",
-                ""
-            ),
-            height=300
-        )
-
-        st.subheader("Changes Made")
-
-        for change in improve_result.get(
-            "changes",
-            []
-        ):
-            st.write(f"• {change}")
-
-        st.session_state["last_draft"] = (
-            improve_result.get(
-                "improved_text",
-                st.session_state["last_draft"]
-            )
-        )
-
         except Exception as e:
 
-            st.error(f"Error: {e}")
+            st.error(
+                f"Error: {e}"
+            )
 
+    # IMPROVE LAST DRAFT
+
+    if st.session_state.get("last_draft"):
+
+        if st.button("✨ Improve Last Draft"):
+
+            try:
+
+                improve_prompt = f"""
+Improve the following text.
+
+Return ONLY JSON.
+
+{{
+  "improved_text":"",
+  "changes":[]
+}}
+
+Text:
+{st.session_state["last_draft"]}
+"""
+
+                improve_response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    response_format={
+                        "type": "json_object"
+                    },
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": improve_prompt
+                        }
+                    ]
+                )
+
+                improve_result = json.loads(
+                    improve_response.choices[0].message.content
+                )
+
+                improved_text = improve_result.get(
+                    "improved_text",
+                    ""
+                )
+
+                st.subheader(
+                    "✨ Improved Version"
+                )
+
+                st.text_area(
+                    "Improved Draft",
+                    value=improved_text,
+                    height=300
+                )
+
+                st.subheader(
+                    "Changes Made"
+                )
+
+                for change in improve_result.get(
+                    "changes",
+                    []
+                ):
+                    st.write(
+                        f"• {change}"
+                    )
+
+                st.session_state["last_draft"] = improved_text
+
+            except Exception as e:
+
+                st.error(
+                    f"Error: {e}"
+                )    
 # ===================================================
 # MODE 3 - DOCUMENT ASSISTANT
 # ===================================================
