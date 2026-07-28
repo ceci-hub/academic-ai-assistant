@@ -7,8 +7,16 @@ client = Groq(
     api_key=st.secrets["GROQ_API_KEY"]
 )
 
+# ====================================
+# SESSION STATE
+# ====================================
+
 if "draft_history" not in st.session_state:
     st.session_state["draft_history"] = []
+
+# ====================================
+# PAGE CONFIG
+# ====================================
 
 st.set_page_config(
     page_title="AI Academic Assistant",
@@ -16,19 +24,23 @@ st.set_page_config(
     layout="wide"
 )
 
+# ====================================
+# CUSTOM CSS
+# ====================================
+
 st.markdown(
     """
     <style>
 
     .stButton button {
         width: 100%;
-        border-radius: 10px;
-        height: 45px;
-        font-weight: bold;
+        border-radius: 12px;
+        height: 48px;
+        font-weight: 600;
     }
 
     .stTextArea textarea {
-        border-radius: 10px;
+        border-radius: 12px;
     }
 
     .block-container {
@@ -40,19 +52,48 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# ====================================
+# HEADER
+# ====================================
+
 st.title("✍️ AI Academic Assistant")
 
-st.info(
-    "Create, improve, summarize, and study smarter with AI."
+st.markdown(
+    """
+    <div style="
+        background: linear-gradient(90deg,#EC4899,#F472B6);
+        padding:15px;
+        border-radius:12px;
+        color:white;
+        text-align:center;
+        font-weight:bold;
+        margin-bottom:20px;
+    ">
+        Create, improve, summarize, and study smarter with AI
+    </div>
+    """,
+    unsafe_allow_html=True
 )
+
+# ====================================
+# SIDEBAR
+# ====================================
 
 with st.sidebar:
 
-    st.title("✍️ AI Academic Assistant")
+    st.title("🌸 AI Academic Assistant")
 
-    st.caption(
-        "Built by Cecilia Regueira"
+    st.markdown(
+        """
+        ### Cecilia Regueira
+
+        Data Analyst II • AI Enthusiast
+
+        🔗 [Connect on LinkedIn](https://www.linkedin.com/in/cecilia-regueira/
+        """
     )
+
+    st.divider()
 
     assistant_mode = st.radio(
         "Choose Assistant Mode",
@@ -69,13 +110,13 @@ with st.sidebar:
         "Powered by Groq + Llama 3.3"
     )
 
+# ====================================
+# MAIN APP STARTS BELOW
+# ====================================
 #################################################
 ###  MÓDULO 1 (IMPROVE EXISTING TEXT)
 #################################################
 
-# ===================================================
-# MODE 1 - IMPROVE EXISTING TEXT
-# ===================================================
 
 if assistant_mode == "Improve Existing Text":
 
@@ -432,10 +473,10 @@ Task:
                     "💡 Improvement Suggestions"
                 )
 
-                selected_suggestion = st.selectbox(
-                    "Choose a suggestion",
-                    suggestions
-                )
+                selected_suggestion = st.radio(
+                     "Choose an improvement",
+                      suggestions
+                  )
 
                 if st.button(
                     "✨ Apply Suggestion"
