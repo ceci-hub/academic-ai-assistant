@@ -89,7 +89,7 @@ with st.sidebar:
 
         Data Analyst/ Data scientist  • AI Enthusiast • Mom
 
-        🔗 [Linked/www.linkedin.com/in/cecilia-regueira/
+        🔗 [Connect/www.linkedin.com/in/cecilia-regueira/]
         """ )
 
     st.divider()
