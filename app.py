@@ -123,7 +123,7 @@ Text:
 
             st.error(f"Error: {e}")
 
-### hel me write
+### help me write
 if assistant_mode == "Help Me Write":
 
     situation = st.text_input(
@@ -206,7 +206,9 @@ Task:
             result = json.loads(
                 response.choices[0].message.content
             )
-
+            
+            st.session_state["last_draft"] = result.get( "draft", "")
+            
             if result.get("subject_line"):
 
                 st.subheader(
@@ -221,12 +223,15 @@ Task:
                 "Generated Draft"
             )
 
-            st.success(
-                result.get(
-                    "draft",
-                    ""
+            draft_text = result.get("draft", "")
+
+            st.text_area(
+               "Draft",
+                value=draft_text,
+                height=250
                 )
-            )
+
+             st.session_state["last_draft"] = draft_text
 
             st.subheader(
                 "Suggestions"
@@ -237,6 +242,67 @@ Task:
                 []
             ):
                 st.write(f"• {s}")
+
+            if "last_draft" in st.session_state:
+
+                 if st.button("✨ Improve Last Draft"):
+
+                 improve_prompt = f"""
+                     Improve the following text.
+
+                  Return ONLY JSON.
+
+                   {{
+                      "improved_text":"",
+                       "changes":[]
+                }}
+
+             Text:
+             {st.session_state["last_draft"]}
+               """
+
+        improve_response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            response_format={
+                "type": "json_object"
+            },
+            messages=[
+                {
+                    "role": "user",
+                    "content": improve_prompt
+                }
+            ]
+        )
+
+        improve_result = json.loads(
+            improve_response.choices[0].message.content
+        )
+
+        st.subheader("✨ Improved Version")
+
+        st.text_area(
+            "Improved Draft",
+            value=improve_result.get(
+                "improved_text",
+                ""
+            ),
+            height=300
+        )
+
+        st.subheader("Changes Made")
+
+        for change in improve_result.get(
+            "changes",
+            []
+        ):
+            st.write(f"• {change}")
+
+        st.session_state["last_draft"] = (
+            improve_result.get(
+                "improved_text",
+                st.session_state["last_draft"]
+            )
+        )
 
         except Exception as e:
 
