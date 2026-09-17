@@ -168,7 +168,7 @@ Text:
             ):
 
                 response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+                    model=MODEL_NAME,
                     response_format={
                         "type": "json_object"
                     },
@@ -386,7 +386,7 @@ Task:
             ):
 
                 response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+                    model=MODEL_NAME,
                     response_format={
                         "type": "json_object"
                     },
@@ -505,7 +505,7 @@ Draft:
                     ):
 
                         improve_response = client.chat.completions.create(
-                            model="llama-3.3-70b-versatile",
+                            model=MODEL_NAME,
                             response_format={
                                 "type": "json_object"
                             },
@@ -659,7 +659,7 @@ Return ONLY valid JSON.
                 ):
 
                     response = client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
+                        model=MODEL_NAME,
                         response_format={
                             "type": "json_object"
                         },
@@ -920,7 +920,7 @@ Question:
                 ):
 
                     qa_response = client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
+                        model=MODEL_NAME,
                         messages=[
                             {
                                 "role": "user",
