@@ -7,20 +7,6 @@ client = Groq(
     api_key=st.secrets["GROQ_API_KEY"]
 )
 
-try:
-    models = client.models.list()
-
-    st.write("Available Models:")
-
-    for model in models.data:
-        st.write(model.id)
-
-except Exception as e:
-    st.error(f"Model List Error: {e}")
-
-st.write(
-    f"Key Prefix: {st.secrets['GROQ_API_KEY'][:10]}"
-)
 # ====================================
 # SESSION STATE
 # ====================================
