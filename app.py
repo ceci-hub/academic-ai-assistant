@@ -3,6 +3,8 @@ from groq import Groq
 import json
 from pypdf import PdfReader
 
+MODEL_NAME = "openai/gpt-oss-120b"
+
 client = Groq(
     api_key=st.secrets["GROQ_API_KEY"]
 )
