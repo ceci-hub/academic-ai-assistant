@@ -18,6 +18,9 @@ try:
 except Exception as e:
     st.error(f"Model List Error: {e}")
 
+st.write(
+    f"Key Prefix: {st.secrets['GROQ_API_KEY'][:10]}"
+)
 # ====================================
 # SESSION STATE
 # ====================================
